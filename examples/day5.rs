@@ -1,4 +1,7 @@
-use std::collections::BTreeMap;
+use std::{
+    collections::BTreeMap,
+    iter::{empty, once},
+};
 
 use eyre::{eyre, ContextCompat, Result, WrapErr};
 use itertools::Itertools;
@@ -13,6 +16,78 @@ struct MappingPart {
     length: usize,
 }
 
+// impl MappingPart {
+//     pub fn merge(self, other: MappingPart) -> impl Iterator<Item = Self> + '_ {}
+// }
+
+trait BoxedIterator<Item> {
+    fn boxed(self) -> Box<dyn Iterator<Item = Item>>;
+}
+
+impl<T, Item> BoxedIterator<Item> for T
+where
+    T: Iterator<Item = Item> + 'static,
+{
+    fn boxed(self) -> Box<dyn Iterator<Item = Item>> {
+        Box::new(self)
+    }
+}
+
+impl MappingPart {
+    pub fn map_range(
+        &self,
+        SeedRange { start, end }: SeedRange,
+    ) -> impl Iterator<Item = SeedRange> + '_ {
+        let Self {
+            source,
+            destination,
+            length,
+        } = *self;
+        let a = start;
+        let b = end;
+        let c = source;
+        let d = source + length;
+        // A -- B
+        //        C -- D
+        if b < c {
+            empty().chain(once((a, b))).boxed()
+        // A -- B
+        //   C -- D
+        } else if a < c && c < b {
+            empty()
+                .chain(once((a, c - 1)))
+                .chain(once((destination, destination + length)))
+                .boxed()
+        //    A -- B
+        // C -- D
+        } else if c < a && a < d {
+            empty()
+                .chain(once((destination, destination + length)))
+                .chain(once((d + 1, b)))
+                .boxed()
+        //         A -- B
+        // C -- D
+        } else if a < d {
+            empty().chain(once((a, b))).boxed()
+        //         A -- B
+        // C --------------- D
+        } else if c < a && b < d {
+            empty()
+                .chain(once((a + destination - source, b + destination - source)))
+                .boxed()
+        //         A ------------- B
+        //              C --- D
+        } else {
+            empty()
+                .chain(once((a, c - 1)))
+                .chain(once((destination, destination + length)))
+                .chain(once((d + 1, b)))
+                .boxed()
+        }
+        .map(|(start, end)| SeedRange { start, end })
+    }
+}
+
 #[derive(Clone, Debug)]
 struct Mapping(Vec<MappingPart>);
 
@@ -20,6 +95,18 @@ impl Mapping {
     pub fn get(&self, key: usize) -> Option<usize> {
         self.0.iter().rev().find_map(|mapping| mapping.get(key))
     }
+    pub fn map_range(&self, seed_range: SeedRange) -> impl Iterator<Item = SeedRange> + '_ {
+        self.0
+            .iter()
+            .flat_map(move |part| part.map_range(seed_range).unique())
+            .unique()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct SeedRange {
+    start: usize,
+    end: usize,
 }
 
 impl MappingPart {
@@ -48,6 +135,15 @@ fn main() -> Result<()> {
                     .expect("bad input")
             })
     };
+    const MAPPING_ORDER: &[(&str, &str)] = &[
+        ("seed", "soil"),
+        ("soil", "fertilizer"),
+        ("fertilizer", "water"),
+        ("water", "light"),
+        ("light", "temperature"),
+        ("temperature", "humidity"),
+        ("humidity", "location"),
+    ];
     INPUT
         .split_once("\n\n")
         .context("header")
@@ -120,47 +216,58 @@ fn main() -> Result<()> {
                             })
                             .collect::<BTreeMap<_, _>>()
                             .pipe(|seed_map| {
-                                let min_out_of =
-                                    |seeds: Vec<usize>| {
-                                        seeds
-                                            .iter()
-                                            .map(|&seed| {
-                                                [
-                                                    ("seed", "soil"),
-                                                    ("soil", "fertilizer"),
-                                                    ("fertilizer", "water"),
-                                                    ("water", "light"),
-                                                    ("light", "temperature"),
-                                                    ("temperature", "humidity"),
-                                                    ("humidity", "location"),
-                                                ]
-                                                .into_iter()
-                                                .fold(seed, |seed, mapping| {
+                                let min_out_of = |seeds: Vec<usize>| {
+                                    seeds
+                                        .iter()
+                                        .map(|&seed| {
+                                            MAPPING_ORDER.iter().cloned().fold(
+                                                seed,
+                                                |seed, mapping| {
                                                     seed_map
                                                         .get(&mapping)
                                                         .expect("bad mapping")
                                                         .get(seed)
                                                         .unwrap_or(seed)
-                                                })
-                                            })
-                                            .min()
-                                    };
+                                                },
+                                            )
+                                        })
+                                        .min()
+                                };
                                 min_out_of(seeds.clone()).pipe(|day_1| {
                                     println!("day 1: {day_1:?}");
                                 });
-                                min_out_of(
-                                    seeds
-                                        .windows(2)
-                                        .step_by(2)
-                                        .map(|window| {
-                                            window.to_vec().try_conv::<[usize; 2]>().unwrap()
-                                        })
-                                        .flat_map(|[start, length]| (start..(start + length)))
-                                        .collect(),
-                                )
-                                .pipe(|day_2| {
-                                    println!("day 2: {day_2:?}");
-                                });
+
+                                seeds
+                                    .windows(2)
+                                    .step_by(2)
+                                    .map(|window| window.to_vec().try_conv::<[usize; 2]>().unwrap())
+                                    .map(|[start, length]| (start, (start + length)))
+                                    .map(|(start, end)| SeedRange { start, end })
+                                    .flat_map(|seed| {
+                                        MAPPING_ORDER.iter().cloned().fold(
+                                            vec![seed],
+                                            |seeds, mapping| {
+                                                seeds
+                                                    .iter()
+                                                    .cloned()
+                                                    .flat_map(|seed| {
+                                                        seed_map
+                                                            .get(&mapping)
+                                                            .expect("bad mapping")
+                                                            .map_range(seed)
+                                                    })
+                                                    .collect::<Vec<_>>()
+                                                    .tap(|new_seeds| {
+                                                        println!("{seeds:?} -> {new_seeds:?}");
+                                                    })
+                                            },
+                                        )
+                                    })
+                                    .map(|SeedRange { start, .. }| start)
+                                    .min()
+                                    .pipe(|day_2| {
+                                        println!("day 2: {day_2:?}");
+                                    })
                             })
                     })
             })

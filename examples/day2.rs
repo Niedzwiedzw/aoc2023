@@ -18,10 +18,7 @@ struct Entry {
 
 impl Subgame {
     pub fn entries(self) -> Vec<Entry> {
-        self.0
-            .into_iter()
-            .map(|(color, count)| Entry { color, count })
-            .collect()
+        self.0.into_iter().map(|(color, count)| Entry { color, count }).collect()
     }
 }
 
@@ -31,20 +28,11 @@ struct Game {
     subgames: Vec<Subgame>,
 }
 
-fn filter_by_subgame_count<'game, 'color: 'game>(
-    game: &'game Game,
-    lookup_color: &'color Color,
-    max_count: usize,
-) -> Option<&'game Game> {
+fn filter_by_subgame_count<'game, 'color: 'game>(game: &'game Game, lookup_color: &'color Color, max_count: usize) -> Option<&'game Game> {
     match game
         .subgames
         .iter()
-        .flat_map(|subgame| {
-            subgame
-                .0
-                .iter()
-                .filter_map(|(color, &count)| color.eq(lookup_color).then_some(count))
-        })
+        .flat_map(|subgame| subgame.0.iter().filter_map(|(color, &count)| color.eq(lookup_color).then_some(count)))
         .find(|count| count.gt(&max_count))
     {
         Some(_count) => None,
@@ -84,27 +72,16 @@ fn main() -> Result<()> {
                                                 .split_once(' ')
                                                 .context("bad color")
                                                 .and_then(|(count, color)| {
-                                                    count.parse().context("Bad count").map(
-                                                        |count| Entry {
-                                                            color: Color(color.to_owned()),
-                                                            count,
-                                                        },
-                                                    )
+                                                    count.parse().context("Bad count").map(|count| Entry {
+                                                        color: Color(color.to_owned()),
+                                                        count,
+                                                    })
                                                 })
-                                                .with_context(|| {
-                                                    format!("parsing color: '{color}'")
-                                                })
+                                                .with_context(|| format!("parsing color: '{color}'"))
                                         })
                                         .collect::<Result<Vec<_>>>()
                                         .context("reading entries")
-                                        .map(|entries| {
-                                            Subgame(
-                                                entries
-                                                    .into_iter()
-                                                    .map(|Entry { color, count }| (color, count))
-                                                    .collect(),
-                                            )
-                                        })
+                                        .map(|entries| Subgame(entries.into_iter().map(|Entry { color, count }| (color, count)).collect()))
                                         .with_context(|| format!("parsing colors: '{colors}'"))
                                 })
                                 .collect::<Result<Vec<_>>>()

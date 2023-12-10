@@ -34,15 +34,8 @@ where
 }
 
 impl MappingPart {
-    pub fn map_range(
-        &self,
-        SeedRange { start, end }: SeedRange,
-    ) -> impl Iterator<Item = SeedRange> + '_ {
-        let Self {
-            source,
-            destination,
-            length,
-        } = *self;
+    pub fn map_range(&self, SeedRange { start, end }: SeedRange) -> impl Iterator<Item = SeedRange> + '_ {
+        let Self { source, destination, length } = *self;
         let a = start;
         let b = end;
         let c = source;
@@ -54,17 +47,11 @@ impl MappingPart {
         // A -- B
         //   C -- D
         } else if a < c && c < b {
-            empty()
-                .chain(once((a, c - 1)))
-                .chain(once((destination, destination + length)))
-                .boxed()
+            empty().chain(once((a, c - 1))).chain(once((destination, destination + length))).boxed()
         //    A -- B
         // C -- D
         } else if c < a && a < d {
-            empty()
-                .chain(once((destination, destination + length)))
-                .chain(once((d + 1, b)))
-                .boxed()
+            empty().chain(once((destination, destination + length))).chain(once((d + 1, b))).boxed()
         //         A -- B
         // C -- D
         } else if a < d {
@@ -72,9 +59,7 @@ impl MappingPart {
         //         A -- B
         // C --------------- D
         } else if c < a && b < d {
-            empty()
-                .chain(once((a + destination - source, b + destination - source)))
-                .boxed()
+            empty().chain(once((a + destination - source, b + destination - source))).boxed()
         //         A ------------- B
         //              C --- D
         } else {
@@ -96,10 +81,7 @@ impl Mapping {
         self.0.iter().rev().find_map(|mapping| mapping.get(key))
     }
     pub fn map_range(&self, seed_range: SeedRange) -> impl Iterator<Item = SeedRange> + '_ {
-        self.0
-            .iter()
-            .flat_map(move |part| part.map_range(seed_range).unique())
-            .unique()
+        self.0.iter().flat_map(move |part| part.map_range(seed_range).unique()).unique()
     }
 }
 
@@ -111,11 +93,7 @@ struct SeedRange {
 
 impl MappingPart {
     pub fn get(&self, key: usize) -> Option<usize> {
-        let Self {
-            source,
-            destination,
-            length,
-        } = *self;
+        let Self { source, destination, length } = *self;
         match source <= key && key <= source + length {
             true => Some(key + (destination - source)),
             false => None,
@@ -144,132 +122,91 @@ fn main() -> Result<()> {
         ("temperature", "humidity"),
         ("humidity", "location"),
     ];
-    INPUT
-        .split_once("\n\n")
-        .context("header")
-        .and_then(|(head, maps)| {
-            parse_head(head).and_then(|seeds| {
-                maps.split("\n\n")
-                    .filter(|l| !l.trim().is_empty())
-                    .map(|map| {
-                        map.split_once(":\n")
-                            .with_context(|| format!("map header: {map:?}"))
-                            .and_then(|(head, mappings)| {
-                                head.split_once(' ')
-                                    .context("map header name")
-                                    .and_then(|(name, _)| {
-                                        name.split_once("-to-").context("mapping kind")
-                                    })
-                                    .and_then(|(source_name, destination_name)| {
-                                        mappings
-                                            .split('\n')
-                                            .filter(|line| !line.is_empty())
-                                            .map(|line| {
-                                                line.split_whitespace()
-                                                    .map(|value| {
-                                                        value.parse::<usize>().with_context(|| {
-                                                            format!("range number: {value:?}")
-                                                        })
-                                                    })
-                                                    .collect::<Result<Vec<_>>>()
-                                                    .and_then(|v| {
-                                                        v.try_conv::<[usize; 3]>()
-                                                            .map_err(|_| eyre!("bad length"))
-                                                    })
-                                                    .map(|[destination, source, length]| {
-                                                        (destination, source, length)
-                                                    })
-                                                    .with_context(|| {
-                                                        format!("parsing line: {line:?}")
-                                                    })
-                                            })
-                                            .collect::<Result<Vec<_>>>()
-                                            .map(|mappings| {
-                                                ((source_name, destination_name), mappings)
-                                            })
-                                            .context("numbers")
-                                            .with_context(|| {
-                                                format!("parsing mappings: {mappings:?}")
-                                            })
-                                    })
-                            })
-                    })
-                    .collect::<Result<Vec<_>>>()
-                    .context("mappings")
-                    .map(|mappings| (seeds, mappings))
-                    .map(|(seeds, mappings)| {
-                        mappings
-                            .into_iter()
-                            .map(|((source_name, destination_name), mappings)| {
-                                mappings
-                                    .iter()
-                                    .cloned()
-                                    .map(|(destination, source, length)| MappingPart {
-                                        source,
-                                        length,
-                                        destination,
-                                    })
-                                    .collect_vec()
-                                    .pipe(|mappings| {
-                                        ((source_name, destination_name), Mapping(mappings))
-                                    })
-                            })
-                            .collect::<BTreeMap<_, _>>()
-                            .pipe(|seed_map| {
-                                let min_out_of = |seeds: Vec<usize>| {
-                                    seeds
-                                        .iter()
-                                        .map(|&seed| {
-                                            MAPPING_ORDER.iter().cloned().fold(
-                                                seed,
-                                                |seed, mapping| {
-                                                    seed_map
-                                                        .get(&mapping)
-                                                        .expect("bad mapping")
-                                                        .get(seed)
-                                                        .unwrap_or(seed)
-                                                },
-                                            )
+    INPUT.split_once("\n\n").context("header").and_then(|(head, maps)| {
+        parse_head(head).and_then(|seeds| {
+            maps.split("\n\n")
+                .filter(|l| !l.trim().is_empty())
+                .map(|map| {
+                    map.split_once(":\n")
+                        .with_context(|| format!("map header: {map:?}"))
+                        .and_then(|(head, mappings)| {
+                            head.split_once(' ')
+                                .context("map header name")
+                                .and_then(|(name, _)| name.split_once("-to-").context("mapping kind"))
+                                .and_then(|(source_name, destination_name)| {
+                                    mappings
+                                        .split('\n')
+                                        .filter(|line| !line.is_empty())
+                                        .map(|line| {
+                                            line.split_whitespace()
+                                                .map(|value| value.parse::<usize>().with_context(|| format!("range number: {value:?}")))
+                                                .collect::<Result<Vec<_>>>()
+                                                .and_then(|v| v.try_conv::<[usize; 3]>().map_err(|_| eyre!("bad length")))
+                                                .map(|[destination, source, length]| (destination, source, length))
+                                                .with_context(|| format!("parsing line: {line:?}"))
                                         })
-                                        .min()
-                                };
-                                min_out_of(seeds.clone()).pipe(|day_1| {
-                                    println!("day 1: {day_1:?}");
-                                });
-
+                                        .collect::<Result<Vec<_>>>()
+                                        .map(|mappings| ((source_name, destination_name), mappings))
+                                        .context("numbers")
+                                        .with_context(|| format!("parsing mappings: {mappings:?}"))
+                                })
+                        })
+                })
+                .collect::<Result<Vec<_>>>()
+                .context("mappings")
+                .map(|mappings| (seeds, mappings))
+                .map(|(seeds, mappings)| {
+                    mappings
+                        .into_iter()
+                        .map(|((source_name, destination_name), mappings)| {
+                            mappings
+                                .iter()
+                                .cloned()
+                                .map(|(destination, source, length)| MappingPart { source, length, destination })
+                                .collect_vec()
+                                .pipe(|mappings| ((source_name, destination_name), Mapping(mappings)))
+                        })
+                        .collect::<BTreeMap<_, _>>()
+                        .pipe(|seed_map| {
+                            let min_out_of = |seeds: Vec<usize>| {
                                 seeds
-                                    .windows(2)
-                                    .step_by(2)
-                                    .map(|window| window.to_vec().try_conv::<[usize; 2]>().unwrap())
-                                    .map(|[start, length]| (start, (start + length)))
-                                    .map(|(start, end)| SeedRange { start, end })
-                                    .flat_map(|seed| {
-                                        MAPPING_ORDER.iter().cloned().fold(
-                                            vec![seed],
-                                            |seeds, mapping| {
-                                                seeds
-                                                    .iter()
-                                                    .cloned()
-                                                    .flat_map(|seed| {
-                                                        seed_map
-                                                            .get(&mapping)
-                                                            .expect("bad mapping")
-                                                            .map_range(seed)
-                                                    })
-                                                    .collect::<Vec<_>>()
-                                                    .tap(|new_seeds| {
-                                                        println!("{seeds:?} -> {new_seeds:?}");
-                                                    })
-                                            },
-                                        )
+                                    .iter()
+                                    .map(|&seed| {
+                                        MAPPING_ORDER.iter().cloned().fold(seed, |seed, mapping| {
+                                            seed_map.get(&mapping).expect("bad mapping").get(seed).unwrap_or(seed)
+                                        })
                                     })
-                                    .map(|SeedRange { start, .. }| start)
                                     .min()
-                                    .pipe(|day_2| {
-                                        println!("day 2: {day_2:?}");
+                            };
+                            min_out_of(seeds.clone()).pipe(|day_1| {
+                                println!("day 1: {day_1:?}");
+                            });
+
+                            seeds
+                                .windows(2)
+                                .step_by(2)
+                                .map(|window| window.to_vec().try_conv::<[usize; 2]>().unwrap())
+                                .map(|[start, length]| (start, (start + length)))
+                                .map(|(start, end)| SeedRange { start, end })
+                                .flat_map(|seed| {
+                                    MAPPING_ORDER.iter().cloned().fold(vec![seed], |seeds, mapping| {
+                                        seeds
+                                            .iter()
+                                            .cloned()
+                                            .flat_map(|seed| seed_map.get(&mapping).expect("bad mapping").map_range(seed))
+                                            .collect::<Vec<_>>()
+                                            .tap(|new_seeds| {
+                                                println!("{seeds:?} -> {new_seeds:?}");
+                                            })
                                     })
-                            })
-                    })
-            })
+                                })
+                                .map(|SeedRange { start, .. }| start)
+                                .min()
+                                .pipe(|day_2| {
+                                    println!("day 2: {day_2:?}");
+                                })
+                        })
+                })
         })
+    })
 }

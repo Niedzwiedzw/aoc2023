@@ -25,26 +25,28 @@ fn main() -> Result<()> {
         .lines()
         .filter_map(|line| {
             line.split_once(':').and_then(|(card, scores)| {
-                card.split_once(' ').and_then(|(_, id)| id.trim().parse::<usize>().ok()).map(|id| {
-                    scores
-                        .split_once('|')
-                        .and_then(|(winning, actual)| {
-                            winning
-                                .split_ascii_whitespace()
-                                .map(|v| v.parse::<usize>())
-                                .collect::<Result<HashSet<_>, _>>()
-                                .ok()
-                                .zip(
-                                    actual
-                                        .split_ascii_whitespace()
-                                        .map(|v| v.parse::<usize>())
-                                        .collect::<Result<Vec<_>, _>>()
-                                        .ok(),
-                                )
-                                .map(|(winning, actual)| (id, (winning, actual)))
-                        })
-                        .expect("bad input")
-                })
+                card.split_once(' ')
+                    .and_then(|(_, id)| id.trim().parse::<usize>().ok())
+                    .map(|id| {
+                        scores
+                            .split_once('|')
+                            .and_then(|(winning, actual)| {
+                                winning
+                                    .split_ascii_whitespace()
+                                    .map(|v| v.parse::<usize>())
+                                    .collect::<Result<HashSet<_>, _>>()
+                                    .ok()
+                                    .zip(
+                                        actual
+                                            .split_ascii_whitespace()
+                                            .map(|v| v.parse::<usize>())
+                                            .collect::<Result<Vec<_>, _>>()
+                                            .ok(),
+                                    )
+                                    .map(|(winning, actual)| (id, (winning, actual)))
+                            })
+                            .expect("bad input")
+                    })
             })
         })
         .collect::<Vec<_>>()
@@ -73,11 +75,19 @@ fn main() -> Result<()> {
                 })
                 .tap(|scored| {
                     scored.pipe(|scored| {
-                        scored.iter().map(|(id, _, score)| (**id, *score)).collect_vec().tap(|scored| {
-                            scored.iter().flat_map(|current| copies(*current, &scored[..])).count().tap(|part_2| {
-                                println!("part 2: {}", part_2);
+                        scored
+                            .iter()
+                            .map(|(id, _, score)| (**id, *score))
+                            .collect_vec()
+                            .tap(|scored| {
+                                scored
+                                    .iter()
+                                    .flat_map(|current| copies(*current, &scored[..]))
+                                    .count()
+                                    .tap(|part_2| {
+                                        println!("part 2: {}", part_2);
+                                    });
                             });
-                        });
                     })
                 })
         });

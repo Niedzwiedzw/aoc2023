@@ -125,7 +125,11 @@ fn main() -> Result<()> {
         .filter(|(_row, line)| !line.is_empty())
         .flat_map(|(row, mut line)| {
             let mut entries = vec![];
-            while let Some((rest, entry)) = next_entry(line, entries.iter().map(|v: &Entry| v.val.len()).sum(), row as _) {
+            while let Some((rest, entry)) = next_entry(
+                line,
+                entries.iter().map(|v: &Entry| v.val.len()).sum(),
+                row as _,
+            ) {
                 line = rest;
                 entries.push(entry);
             }
@@ -136,7 +140,9 @@ fn main() -> Result<()> {
             entries
                 .iter()
                 .filter_map(|Entry { val, coords }| match val {
-                    EntryKind::Number(number) if number.chars().all(|c| c.is_ascii_digit()) => Some((number, *coords)),
+                    EntryKind::Number(number) if number.chars().all(|c| c.is_ascii_digit()) => {
+                        Some((number, *coords))
+                    }
                     _ => None,
                 })
                 .map(|(engine_number, coords)| {
@@ -148,7 +154,11 @@ fn main() -> Result<()> {
                                     val: EntryKind::Symbol(_symbol),
                                     coords: check,
                                 } => (0..engine_number.len())
-                                    .flat_map(|offset| coords.tap_mut(|coords| coords.x += offset as i32).pipe(Coords::neighbours))
+                                    .flat_map(|offset| {
+                                        coords
+                                            .tap_mut(|coords| coords.x += offset as i32)
+                                            .pipe(Coords::neighbours)
+                                    })
                                     .any(|coords| &coords == check)
                                     .then_some(()),
                                 _ => None,
@@ -186,14 +196,21 @@ fn main() -> Result<()> {
                         .neighbours()
                         .filter_map(|coord| {
                             lookup.get(&coord).and_then(|entry_kind| match entry_kind {
-                                EntryKind::Number(number) => Some(number.parse::<i32>().expect("bad number")),
+                                EntryKind::Number(number) => {
+                                    Some(number.parse::<i32>().expect("bad number"))
+                                }
                                 _ => None,
                             })
                         })
                         .unique()
                         .collect_vec()
                 })
-                .filter_map(|values| values.try_conv::<[i32; 2]>().ok().map(|[one, two]| one * two))
+                .filter_map(|values| {
+                    values
+                        .try_conv::<[i32; 2]>()
+                        .ok()
+                        .map(|[one, two]| one * two)
+                })
                 .sum::<i32>()
                 .tap(|value| println!("day 2: {value}"));
         });

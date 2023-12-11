@@ -139,10 +139,22 @@ impl Position {
     fn neighbour(self, direction: Direction) -> Self {
         let Self { column, row } = self;
         match direction {
-            Direction::North => Self { column, row: row - 1 },
-            Direction::South => Self { column, row: row + 1 },
-            Direction::East => Self { column: column + 1, row },
-            Direction::West => Self { column: column - 1, row },
+            Direction::North => Self {
+                column,
+                row: row - 1,
+            },
+            Direction::South => Self {
+                column,
+                row: row + 1,
+            },
+            Direction::East => Self {
+                column: column + 1,
+                row,
+            },
+            Direction::West => Self {
+                column: column - 1,
+                row,
+            },
         }
     }
     fn neighbours(self) -> [(Self, Direction); 4] {
@@ -151,9 +163,18 @@ impl Position {
     fn neighbours_with_diagonals(self) -> [Self; 8] {
         let Self { column, row } = self;
         [
-            Self { column, row: row - 1 },
-            Self { column, row: row + 1 },
-            Self { column: column + 1, row },
+            Self {
+                column,
+                row: row - 1,
+            },
+            Self {
+                column,
+                row: row + 1,
+            },
+            Self {
+                column: column + 1,
+                row,
+            },
             Self {
                 column: column + 1,
                 row: row - 1,
@@ -162,7 +183,10 @@ impl Position {
                 column: column + 1,
                 row: row + 1,
             },
-            Self { column: column - 1, row },
+            Self {
+                column: column - 1,
+                row,
+            },
             Self {
                 column: column - 1,
                 row: row - 1,
@@ -199,34 +223,53 @@ impl Input {
     }
 
     fn get_neighbour(&self, position: Position, direction: Direction) -> Option<PositionedTile> {
-        position.neighbour(direction).pipe(|position| self.get(position))
+        position
+            .neighbour(direction)
+            .pipe(|position| self.get(position))
     }
     fn rows(&self) -> impl Iterator<Item = (u16, &[Tile])> + '_ {
-        self.0.iter().enumerate().map(|(row, v)| (row as _, v.as_slice()))
+        self.0
+            .iter()
+            .enumerate()
+            .map(|(row, v)| (row as _, v.as_slice()))
     }
     fn all(&self) -> impl Iterator<Item = PositionedTile> + '_ {
         self.rows().flat_map(move |(row, tiles)| {
-            tiles.iter().copied().enumerate().map(move |(column, tile)| PositionedTile {
-                tile,
-                position: Position {
-                    row,
-                    column: column as _,
-                },
-            })
+            tiles
+                .iter()
+                .copied()
+                .enumerate()
+                .map(move |(column, tile)| PositionedTile {
+                    tile,
+                    position: Position {
+                        row,
+                        column: column as _,
+                    },
+                })
         })
     }
 
     fn starts(&self) -> impl Iterator<Item = PositionedTile> + '_ {
-        self.all().filter(|PositionedTile { tile, .. }| matches!(tile, Tile::Start))
+        self.all()
+            .filter(|PositionedTile { tile, .. }| matches!(tile, Tile::Start))
     }
 
-    fn neighbours(&self, position: Position) -> impl Iterator<Item = (PositionedTile, Direction)> + '_ {
+    fn neighbours(
+        &self,
+        position: Position,
+    ) -> impl Iterator<Item = (PositionedTile, Direction)> + '_ {
         position
             .neighbours()
             .into_iter()
-            .flat_map(|(position, direction)| self.get(position).map(|positioned_tile| (positioned_tile, direction)))
+            .flat_map(|(position, direction)| {
+                self.get(position)
+                    .map(|positioned_tile| (positioned_tile, direction))
+            })
     }
-    fn neighbours_with_diagonals(&self, position: Position) -> impl Iterator<Item = PositionedTile> + '_ {
+    fn neighbours_with_diagonals(
+        &self,
+        position: Position,
+    ) -> impl Iterator<Item = PositionedTile> + '_ {
         position
             .neighbours_with_diagonals()
             .into_iter()
@@ -315,9 +358,8 @@ where
 impl Tile {
     fn entered_from(self, direction: Direction) -> Option<(Self, Option<Direction>)> {
         match self {
-            Tile::Pipe(connections) => {
-                popped_array(connections, &direction.opposite()).map(|remaining| (self, Some(remaining)))
-            }
+            Tile::Pipe(connections) => popped_array(connections, &direction.opposite())
+                .map(|remaining| (self, Some(remaining))),
             Tile::Ground => None,
             Tile::Start => Some((self, None)),
         }
@@ -360,7 +402,9 @@ pub enum Turn {
 
 impl PositionedTile {
     fn entered_from(self, direction: Direction) -> Option<(Self, Option<Direction>)> {
-        self.tile.entered_from(direction).map(|(_, direction)| (self, direction))
+        self.tile
+            .entered_from(direction)
+            .map(|(_, direction)| (self, direction))
     }
 }
 
@@ -516,6 +560,8 @@ where
         .pipe(boxed)
 }
 
-fn boxed<'a, T: Iterator<Item = I> + 'a, I: 'static>(iterator: T) -> Box<dyn (Iterator<Item = I>) + 'a> {
+fn boxed<'a, T: Iterator<Item = I> + 'a, I: 'static>(
+    iterator: T,
+) -> Box<dyn (Iterator<Item = I>) + 'a> {
     Box::new(iterator)
 }

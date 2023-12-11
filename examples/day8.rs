@@ -42,7 +42,14 @@ fn main() {
                     })
                     .collect::<BTreeMap<_, _>>()
                     .tap(|lookup| {
-                        let mut current = (0usize, if lookup.contains_key("AAA") { "AAA" } else { first });
+                        let mut current = (
+                            0usize,
+                            if lookup.contains_key("AAA") {
+                                "AAA"
+                            } else {
+                                first
+                            },
+                        );
                         directions
                             .chars()
                             .cycle()
@@ -53,7 +60,9 @@ fn main() {
                                     .get(current.1)
                                     .with_context(|| format!("in unknown location: {:?}", current))
                                     .unwrap()
-                                    .pipe(|lookup| lookup.get(&direction).context("invalid direction").unwrap())
+                                    .pipe(|lookup| {
+                                        lookup.get(&direction).context("invalid direction").unwrap()
+                                    })
                                     .pipe(|new_location| {
                                         current = (step, *new_location);
                                         current
@@ -68,7 +77,10 @@ fn main() {
                         lookup
                             .keys()
                             .filter(|key| key.ends_with('A'))
-                            .flat_map(|key| all_descendants(lookup, key).inspect(move |next| println!("{key} -> {next}")))
+                            .flat_map(|key| {
+                                all_descendants(lookup, key)
+                                    .inspect(move |next| println!("{key} -> {next}"))
+                            })
                             .count()
                             .pipe(|part_2| {
                                 println!("part 2: {part_2}");

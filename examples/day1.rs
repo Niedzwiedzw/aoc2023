@@ -26,7 +26,10 @@ const DIGITS: &[(u32, &str)] = &[
 ];
 
 fn next_digit(input: &str) -> Option<u32> {
-    DIGITS.iter().copied().find_map(|(i, digit)| input.strip_prefix(digit).map(|_| (i)))
+    DIGITS
+        .iter()
+        .copied()
+        .find_map(|(i, digit)| input.strip_prefix(digit).map(|_| (i)))
 }
 
 fn main() {

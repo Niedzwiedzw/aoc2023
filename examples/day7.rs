@@ -9,9 +9,13 @@ trait BoxedIterator<Item> {
     fn boxed(self) -> Box<dyn Iterator<Item = Item>>;
 }
 
-pub const STRENGTHS: &[char] = &['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+pub const STRENGTHS: &[char] = &[
+    'A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2',
+];
 
-pub const STRENGTHS_PART_2: &[char] = &['A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2', 'J'];
+pub const STRENGTHS_PART_2: &[char] = &[
+    'A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2', 'J',
+];
 
 #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq)]
 enum HandKind {
@@ -32,8 +36,14 @@ fn kind(hand: &str) -> Result<HandKind> {
         .into_iter()
         .map(|(value, occurrences)| (value, occurrences.into_iter().count()))
         .collect_vec()
-        .pipe(
-            |occurences| match occurences.into_iter().map(|(_char, count)| count).sorted().collect_vec().as_slice() {
+        .pipe(|occurences| {
+            match occurences
+                .into_iter()
+                .map(|(_char, count)| count)
+                .sorted()
+                .collect_vec()
+                .as_slice()
+            {
                 [5] => Ok(FiveOfAKind),
                 [1, 4] => Ok(FourOfAKind),
                 [2, 3] => Ok(FullHouse),
@@ -42,8 +52,8 @@ fn kind(hand: &str) -> Result<HandKind> {
                 [1, 1, 1, 2] => Ok(OnePair),
                 [1, 1, 1, 1, 1] => Ok(HighCard),
                 other => bail!("'{hand}' produced an unhandled variant: {other:?}"),
-            },
-        )
+            }
+        })
 }
 
 fn card_strength(card: char) -> usize {
@@ -66,17 +76,23 @@ fn card_strength_part_2(card: char) -> usize {
     })
 }
 
-fn boxed<'a, T: Iterator<Item = I> + 'a, I: 'static>(iterator: T) -> Box<dyn (Iterator<Item = I>) + 'a> {
+fn boxed<'a, T: Iterator<Item = I> + 'a, I: 'static>(
+    iterator: T,
+) -> Box<dyn (Iterator<Item = I>) + 'a> {
     Box::new(iterator)
 }
 
-fn combinations<'input>(possible_cards: &'input [&'input [char]]) -> impl Iterator<Item = Vec<char>> + 'input {
+fn combinations<'input>(
+    possible_cards: &'input [&'input [char]],
+) -> impl Iterator<Item = Vec<char>> + 'input {
     match possible_cards {
         [] => once(vec![]).pipe(boxed),
         [head, tail @ ..] => head
             .iter()
             .copied()
-            .flat_map(|head| combinations(tail).map(move |tail| tail.tap_mut(|tail| tail.insert(0, head))))
+            .flat_map(|head| {
+                combinations(tail).map(move |tail| tail.tap_mut(|tail| tail.insert(0, head)))
+            })
             .pipe(boxed),
     }
 }
@@ -85,7 +101,10 @@ fn main() -> Result<()> {
     #[allow(clippy::unit_arg)]
     INPUT
         .lines()
-        .filter_map(|line| line.split_once(' ').map(|(hand, bet)| (hand, bet.parse::<usize>().expect("Bad bet"))))
+        .filter_map(|line| {
+            line.split_once(' ')
+                .map(|(hand, bet)| (hand, bet.parse::<usize>().expect("Bad bet")))
+        })
         .collect::<Vec<_>>()
         .pipe(|lines| {
             lines
@@ -95,10 +114,15 @@ fn main() -> Result<()> {
                         .map(|(hand, bet)| {
                             (
                                 (hand, bet),
-                                (kind(hand).expect("bad hand"), hand.chars().map(card_strength).collect_vec()),
+                                (
+                                    kind(hand).expect("bad hand"),
+                                    hand.chars().map(card_strength).collect_vec(),
+                                ),
                             )
                         })
-                        .sorted_unstable_by_key(|(_, (kind, strengths))| (kind.to_owned(), strengths.clone()))
+                        .sorted_unstable_by_key(|(_, (kind, strengths))| {
+                            (kind.to_owned(), strengths.clone())
+                        })
                         .enumerate()
                         .map(|(i, v)| (i + 1, v))
                         .map(|(rank, ((_hand, bet), (_kind, _strongest)))| rank * bet)
@@ -127,16 +151,23 @@ fn main() -> Result<()> {
                                             (
                                                 (hand, new_hand.clone(), bet),
                                                 (
-                                                    kind(&new_hand.into_iter().join("")).expect("bad hand"),
-                                                    hand.chars().map(card_strength_part_2).collect_vec(),
+                                                    kind(&new_hand.into_iter().join(""))
+                                                        .expect("bad hand"),
+                                                    hand.chars()
+                                                        .map(card_strength_part_2)
+                                                        .collect_vec(),
                                                 ),
                                             )
                                         })
-                                        .max_by_key(|(_, (kind, strengths))| (*kind, strengths.clone()))
+                                        .max_by_key(|(_, (kind, strengths))| {
+                                            (*kind, strengths.clone())
+                                        })
                                 })
                                 .expect("no variants")
                         })
-                        .sorted_unstable_by_key(|(_, (kind, strengths))| (kind.to_owned(), strengths.clone()))
+                        .sorted_unstable_by_key(|(_, (kind, strengths))| {
+                            (kind.to_owned(), strengths.clone())
+                        })
                         .enumerate()
                         .map(|(i, v)| (i + 1, v))
                         .inspect(|e| println!("{e:?}"))

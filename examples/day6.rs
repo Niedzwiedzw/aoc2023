@@ -25,19 +25,29 @@ fn main() -> Result<()> {
         .lines()
         .filter(|line| !line.is_empty())
         .collect_vec()
-        .pipe(|v| v.try_conv::<[&str; 2]>().map_err(|v| eyre!("bad lines: {v:?}")).unwrap())
+        .pipe(|v| {
+            v.try_conv::<[&str; 2]>()
+                .map_err(|v| eyre!("bad lines: {v:?}"))
+                .unwrap()
+        })
         .tap(|[time, distance]| {
             (
                 time.split_whitespace()
                     .filter(|v| !v.is_empty())
                     .skip(1)
-                    .map(|v| v.parse::<u32>().wrap_err_with(|| format!("bad numbers: {v:?}")))
+                    .map(|v| {
+                        v.parse::<u32>()
+                            .wrap_err_with(|| format!("bad numbers: {v:?}"))
+                    })
                     .collect::<Result<Vec<_>>>()
                     .unwrap(),
                 distance
                     .split_whitespace()
                     .filter(|v| !v.is_empty())
-                    .map(|v| v.parse::<u32>().wrap_err_with(|| format!("bad numbers: {v:?}")))
+                    .map(|v| {
+                        v.parse::<u32>()
+                            .wrap_err_with(|| format!("bad numbers: {v:?}"))
+                    })
                     .skip(1)
                     .collect::<Result<Vec<_>>>()
                     .unwrap(),
@@ -56,10 +66,12 @@ fn main() -> Result<()> {
         })
         .tap(|[time, distance]| {
             let parse = |input: &str| {
-                input
-                    .split_once(": ")
-                    .unwrap()
-                    .pipe(|(_, entries)| entries.split_whitespace().join("").pipe(|v| v.parse::<usize>().unwrap()))
+                input.split_once(": ").unwrap().pipe(|(_, entries)| {
+                    entries
+                        .split_whitespace()
+                        .join("")
+                        .pipe(|v| v.parse::<usize>().unwrap())
+                })
             };
             (time.pipe_deref(parse), distance.pipe_deref(parse)).pipe(|(time, distance)| {
                 ways_to_win(time, distance).pipe(|part_2| {

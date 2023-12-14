@@ -1,67 +1,10 @@
-use eyre::{bail, eyre, Result, WrapErr};
+use eyre::{eyre, Result};
 use itertools::Itertools;
-use std::{convert::identity, iter::once, ops::Sub, str::FromStr};
+use std::{iter::once, ops::Sub, str::FromStr};
 use strum::{AsRefStr, EnumString, IntoStaticStr};
 use tap::prelude::*;
 
 const INPUT: &str = include_str!("./day14.txt");
-
-pub mod colored {
-    use std::fmt::Display;
-
-    #[derive(Default, Clone, Copy)]
-    enum Color {
-        Red,
-        Yellow,
-        #[default]
-        Purple,
-        Cyan,
-    }
-
-    impl Color {
-        fn code(self) -> u16 {
-            match self {
-                Self::Red => 91,
-                Self::Yellow => 93,
-                Self::Purple => 95,
-                Self::Cyan => 96,
-            }
-        }
-        fn start(self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "\x1b[{}m", self.code())
-        }
-        fn end(self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "\x1b[0m")
-        }
-    }
-
-    struct Colored<T> {
-        inner: T,
-        color: Color,
-    }
-
-    impl<T> std::fmt::Display for Colored<T>
-    where
-        T: Display,
-    {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            self.color.start(f)?;
-            self.inner.fmt(f)?;
-            self.color.end(f)?;
-            Ok(())
-        }
-    }
-
-    trait ColoredExt: Sized {
-        fn colored(self, color: Color) -> Colored<Self>;
-    }
-
-    impl<T: Sized> ColoredExt for T {
-        fn colored(self, color: Color) -> Colored<Self> {
-            Colored { inner: self, color }
-        }
-    }
-}
 
 #[derive(
     Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, EnumString, AsRefStr, IntoStaticStr,
@@ -164,7 +107,7 @@ impl Input {
         })
     }
 
-    fn get(&self, position @ Position { column, row }: Position) -> Result<Option<Rock>> {
+    fn get(&self, Position { column, row }: Position) -> Result<Option<Rock>> {
         self.0
             .get(row as usize)
             .ok_or_else(|| eyre!("invalid row: {row}"))
@@ -291,8 +234,8 @@ fn main() {
             };
             input
                 .clone()
-                .pipe(|mut input| Simulation { state: input })
-                .tap(|mut simulation| {
+                .pipe(|input| Simulation { state: input })
+                .tap(|simulation| {
                     simulation.pipe(Clone::clone).pipe(|mut simulation| {
                         std::iter::once(())
                             .cycle()
@@ -306,7 +249,7 @@ fn main() {
                             });
                     });
                 })
-                .tap(|mut simulation| {
+                .tap(|simulation| {
                     simulation.pipe(Clone::clone).pipe(|mut simulation| {
                         (0..1000)
                             .map(|_| {

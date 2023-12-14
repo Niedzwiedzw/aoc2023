@@ -146,7 +146,7 @@ fn main() {
                                         .fold(BTreeMap::default(), |acc, ([a, b], distance)| {
                                             acc.tap_mut(|acc| {
                                                 acc.entry(a.min(b))
-                                                    .or_insert(BTreeMap::default())
+                                                    .or_insert(BTreeMap::new())
                                                     .insert(a.max(b), distance);
                                             })
                                         })

@@ -251,7 +251,7 @@ fn main() {
                 })
                 .tap(|simulation| {
                     simulation.pipe(Clone::clone).pipe(|mut simulation| {
-                        (0..1000)
+                        (0..1001)
                             .map(|_| {
                                 let previous = simulation.clone();
                                 Direction::all()

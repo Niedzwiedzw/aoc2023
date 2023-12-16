@@ -1,49 +1,43 @@
-use std::{
-    cell::RefCell,
-    collections::BTreeMap,
-    convert::identity,
-    iter::{once, once_with},
-    sync::{Arc, Mutex, RwLock},
-};
+use std::{cell::RefCell, collections::BTreeMap, iter::once_with};
 
 use itertools::Itertools;
 use tap::prelude::*;
 
 const INPUT: &str = include_str!("./day12.txt");
 
-fn boxed<'a, T>(i: impl Iterator<Item = T> + 'a) -> Box<dyn Iterator<Item = T> + 'a> {
-    Box::new(i)
-}
+// fn boxed<'a, T>(i: impl Iterator<Item = T> + 'a) -> Box<dyn Iterator<Item = T> + 'a> {
+//     Box::new(i)
+// }
 
-fn variants(character: char) -> impl Iterator<Item = char> {
-    match character {
-        '?' => once('#').chain(once('.')).pipe(boxed),
-        other => once(other).pipe(boxed),
-    }
-}
+// fn variants(character: char) -> impl Iterator<Item = char> {
+//     match character {
+//         '?' => once('#').chain(once('.')).pipe(boxed),
+//         other => once(other).pipe(boxed),
+//     }
+// }
 
-fn possible_combinations(input: &[char]) -> impl Iterator<Item = Vec<char>> + '_ {
-    match input {
-        [] => once_with(Vec::new).pipe(boxed),
-        [first, rest @ ..] => variants(*first)
-            .flat_map(|variant| {
-                possible_combinations(rest)
-                    .map(move |rest| rest.tap_mut(|rest| rest.insert(0, variant)))
-            })
-            .pipe(boxed),
-    }
-}
+// fn possible_combinations(input: &[char]) -> impl Iterator<Item = Vec<char>> + '_ {
+//     match input {
+//         [] => once_with(Vec::new).pipe(boxed),
+//         [first, rest @ ..] => variants(*first)
+//             .flat_map(|variant| {
+//                 possible_combinations(rest)
+//                     .map(move |rest| rest.tap_mut(|rest| rest.insert(0, variant)))
+//             })
+//             .pipe(boxed),
+//     }
+// }
 
-fn matches_mask(mask: &[usize], input: &[char]) -> bool {
-    input
-        .iter()
-        .group_by(|&&c| c)
-        .into_iter()
-        .filter_map(|(c, group)| c.eq(&'#').then_some(group.count()))
-        .collect_vec()
-        .as_slice()
-        .eq(mask)
-}
+// fn matches_mask(mask: &[usize], input: &[char]) -> bool {
+//     input
+//         .iter()
+//         .group_by(|&&c| c)
+//         .into_iter()
+//         .filter_map(|(c, group)| c.eq(&'#').then_some(group.count()))
+//         .collect_vec()
+//         .as_slice()
+//         .eq(mask)
+// }
 
 type Lookup = BTreeMap<(Vec<char>, Vec<usize>), u128>;
 

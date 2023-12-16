@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 
-use eyre::ContextCompat;
 use itertools::Itertools;
 use tap::prelude::*;
 
@@ -143,10 +142,10 @@ fn main() {
                                                 })
                                                 .collect_vec()
                                         })
-                                        .fold(BTreeMap::default(), |acc, ([a, b], distance)| {
+                                        .fold(BTreeMap::<_, BTreeMap::<_, _>>::default(), |acc, ([a, b], distance)| {
                                             acc.tap_mut(|acc| {
                                                 acc.entry(a.min(b))
-                                                    .or_insert(BTreeMap::new())
+                                                    .or_default()
                                                     .insert(a.max(b), distance);
                                             })
                                         })

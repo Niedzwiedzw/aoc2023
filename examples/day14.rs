@@ -181,10 +181,10 @@ impl Simulation {
                         Ok(Positioned {
                             inner: None,
                             position: neighbour,
-                        }) => state
-                            .swap(position, neighbour)
-                            .expect("failed to swap")
-                            .pipe(|_| Some(Change)),
+                        }) => {
+                            state.swap(position, neighbour).expect("failed to swap");
+                            Some(Change)
+                        }
                         _ => None,
                     },
                     _other => None,
@@ -237,16 +237,17 @@ fn main() {
                 .pipe(|input| Simulation { state: input })
                 .tap(|simulation| {
                     simulation.pipe(Clone::clone).pipe(|mut simulation| {
-                        std::iter::once(())
+                        if std::iter::once(())
                             .cycle()
                             .map(|_| simulation.tick(Direction::North))
                             .take_while(|&changes| changes != 0)
                             .last()
-                            .map(|_| {
-                                simulation
-                                    .pipe_ref(total_load)
-                                    .pipe(|part_1| println!("part 1: {part_1}"))
-                            });
+                            .is_some()
+                        {
+                            simulation
+                                .pipe_ref(total_load)
+                                .pipe(|part_1| println!("part 1: {part_1}"))
+                        }
                     });
                 })
                 .tap(|simulation| {
